@@ -72,7 +72,7 @@ class GP(BaseHTTPRequestHandler):
             print(res[1])
             enter_employee(file_name, res[1])
             self.wfile.write(b"Success!")
-            sleep(1)
+            sleep(2)
             self.connection.close()
 
         elif res[0] == 'name':
@@ -80,7 +80,7 @@ class GP(BaseHTTPRequestHandler):
             print(name)
             id = create_new_employee(file_name, name)
             self.wfile.write(bytes(str(id).encode('utf-8')))
-            sleep(1.5)
+            sleep(3)
             self.connection.close()
 
         elif res[0] == 'excel':
@@ -91,7 +91,7 @@ class GP(BaseHTTPRequestHandler):
             subprocess.call(bash_command.split())
             # p = subprocess.Popen(bash_command.split(), stdout=subprocess.PIPE,
             #                      stderr=subprocess.STDOUT, executable='/bin/bash')
-
+            #
             # for line in p.stdout.readlines():
             #     print(line.decode('utf-8'))
             # p.wait()
@@ -116,9 +116,10 @@ class GP(BaseHTTPRequestHandler):
 
 
 def run(server_class=HTTPServer, handler_class=GP, port=8080):
-    server_address = ('192.168.1.4', port)
+    # server_address = ('192.168.1.4', port)
+    server_address = ('10.50.1.193', port)
     httpd = server_class(server_address, handler_class)
-    print('Server running at 192.168.1.4:8080...')
+    print('Server running at 10.50.1.193:8080...')
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

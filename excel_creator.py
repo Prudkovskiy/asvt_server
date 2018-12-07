@@ -64,8 +64,9 @@ def make_start_excel(filename):
         day_of_week = week[datetime.strptime('{}.{}'.format(sheet_name, day_of_month), '%Y.%m.%d').weekday()]
         worksheet.write(0, i + 5, '{}|{}'.format(day_of_week, day_of_month))
 
-    worksheet.write(0, 5 + number_of_days, 'Суммарно за месяц')
-
+    worksheet.write(0, 5 + number_of_days, 'Отработано за месяц')
+    worksheet.write(0, 6 + number_of_days, 'Осталось работать')
+    worksheet.write(0, 7 + number_of_days, 'Перерасчет на каждый день')
     # worksheet.write(1, 0, 1)
     # worksheet.write(1, 1, 'Рафиков А.Г.')
     # worksheet.write(1, 2, 'Ведущий инженер')
@@ -159,8 +160,9 @@ def create_new_employee(filename, name):
     new_id = len(df)+1
     val = [new_id, name, None, 'Да', datetime.now().strftime("%H:%M:%S")]
 
-    for _ in df.columns[5:-1]:
-        val.append('0ч. 0мин. 0сек.')
+    for _ in df.columns[5:-3]:
+        # val.append('0ч. 0мин. 0сек.')
+        val.append('')
 
     val.append(0)  # sum
 
@@ -190,16 +192,39 @@ def get_sum(row):
     number_of_days = calendar.monthrange(int(year_month[0]), int(year_month[1]))[1]
     # empty result timedelta
     td = timedelta()
+    # сколько 8-часовых дней требовалось отработать в текущем месяце изначально
+    days_cur = 0
+    # сколько из них осталось отработать, включая текущий
+    days_left = 0
     for i in range(number_of_days):
         day_of_month = i + 1
         day_of_week = week[datetime.strptime('{}.{}'.format(sheet_name, day_of_month), '%Y.%m.%d').weekday()]
+        if day_of_week not in ('Сб', 'Вс'):
+            days_cur += 1
+            if day_of_month >= datetime.today().day:
+                days_left += 1
         today = '{}|{}'.format(day_of_week, day_of_month)
-        h, m, s = list(map(int, re.findall(r'\d+', row[today])))
+        try:
+            h, m, s = list(map(int, re.findall(r'\d+', row[today])))
+        except Exception:
+            h, m, s = 0, 0, 0
         td += timedelta(hours=h, minutes=m, seconds=s)
-
+        
+    # отработано
     d = td.days
     h, m, s = hours_minutes_seconds(td.seconds)
-    return '{}дн. {}ч. {}мин. {}сек.'.format(d, h, m, s)
+    current = '{}дн. {}ч. {}мин. {}сек.'.format(d, h, m, s)
+    # осталось отработать
+    time_left = timedelta(hours=days_cur*8) - td
+    d = time_left.days
+    h, m, s = hours_minutes_seconds(time_left.seconds)
+    required = '{}дн. {}ч. {}мин. {}сек.'.format(d, h, m, s)
+    # растолкать по оставшимся дням
+    time_left_per_day = time_left / days_left
+    h, m, s = hours_minutes_seconds(time_left_per_day.seconds)
+    left = '{}ч. {}мин. {}сек.'.format(h, m, s)
+
+    return pd.Series([current, required, left])
 
 
 def enter_employee(filename, id):
@@ -240,12 +265,17 @@ def enter_employee(filename, id):
         td = curr_time - prev_time
 
         today = '{}|{}'.format(week[datetime.now().weekday()], datetime.now().day)
-        h_old, m_old, s_old = list(map(int, re.findall(r'\d+', ser[today])))
+        try:
+            h_old, m_old, s_old = list(map(int, re.findall(r'\d+', ser[today])))
+        except Exception:
+            h_old, m_old, s_old = 0, 0, 0
+
         td_old = timedelta(hours=h_old, minutes=m_old, seconds=s_old)
         td_res = td + td_old
         h_res, m_res, s_res = hours_minutes_seconds(td_res.seconds)
         df.loc[id - 1, today] = '{}ч. {}мин. {}сек.'.format(h_res, m_res, s_res)
-        df['Суммарно за месяц'] = df.apply(get_sum, axis=1)
+        cols = ['Отработано за месяц', 'Осталось работать', 'Перерасчет на каждый день']
+        df[cols] = df.apply(get_sum, axis=1)
 
     elif ser['На работе'] == 'Нет':
         df.loc[id - 1, 'На работе'] = 'Да'

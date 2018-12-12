@@ -67,7 +67,7 @@ class GP(BaseHTTPRequestHandler):
 
             except Exception as ex:
                 res[1] = ord(res[1])
-                print(ex)
+                # print(ex)
 
             print(res[1])
             enter_employee(file_name, res[1])
@@ -116,10 +116,11 @@ class GP(BaseHTTPRequestHandler):
 
 
 def run(server_class=HTTPServer, handler_class=GP, port=8080):
-    # server_address = ('192.168.1.4', port)
-    server_address = ('10.50.1.193', port)
+    ip_addr = '192.168.1.6'
+    # ip_addr = '10.50.1.193'
+    server_address = (ip_addr, port)
     httpd = server_class(server_address, handler_class)
-    print('Server running at 10.50.1.193:8080...')
+    print(f'Server running at {ip_addr}:{port}...')
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

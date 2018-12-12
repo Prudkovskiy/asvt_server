@@ -9,7 +9,6 @@ import pandas as pd
 import xlrd
 import xlsxwriter
 import calendar
-from time import sleep
 import re
 
 __author__ = 'prudkovskiy'
@@ -164,7 +163,7 @@ def create_new_employee(filename, name):
         # val.append('0ч. 0мин. 0сек.')
         val.append('')
 
-    val.append(0)  # sum
+    val += ['', '', '']  # sum
 
     df_add = pd.DataFrame([val], columns=df.columns)
     df = df.append(df_add)
